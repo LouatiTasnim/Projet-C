@@ -9,13 +9,12 @@ static void Date(char* dateStr[256]) {
     time_t currentTime;
     struct tm *localTime;
 
-    time(&currentTime);           // Obtient le temps actuel en secondes depuis l'époque (01/01/1970)
+    time(&currentTime);           // Obtient le temps actuel en secondes depuis l'Ã©poque (01/01/1970)
     localTime = localtime(&currentTime);  // Convertit le temps en une structure tm
 
-    // Formater la date dans la chaîne de caractères
+    // Formater la date dans la chaÃ®ne de caractÃ¨res
     snprintf(dateStr, 256, "%02d/%02d/%04d",
              localTime->tm_mday, localTime->tm_mon + 1, localTime->tm_year + 1900);
-    //MessageBox(NULL, dateStr, "Error", MB_ICONEXCLAMATION | MB_OK);
 }
 
 
@@ -80,30 +79,29 @@ typedef struct {
 /////////////fichier////////////////////////////
 
 static void sauvegarderHistorique(PileLocation* pile) {
-    // Ouvrir le fichier en mode écriture, s'il n'existe pas, il sera créé
+    // Ouvrir le fichier en mode Ã©criture, s'il n'existe pas, il sera crÃ©Ã©
     FILE *fichierHistorique = fopen("historique.txt", "a");
 
     if (fichierHistorique == NULL) {
-        printf("Erreur lors de l'ouverture/la création du fichier historique.txt.\n");
+        printf("Erreur lors de l'ouverture/la crÃ©ation du fichier historique.txt.\n");
         return;
     }
 
-    // Parcourir la pile et écrire chaque élément dans le fichier
+    // Parcourir la pile et Ã©crire chaque Ã©lÃ©ment dans le fichier
     NodeLocation *current = pile->sommet;
     while (current != NULL) {
-        fprintf(fichierHistorique, "Référence voiture : %s\n", current->location.refCar);
+        fprintf(fichierHistorique, "Reference voiture : %s\n", current->location.refCar);
         fprintf(fichierHistorique, "E-mail utilisateur : %s\n", current->location.emailUser);
         fprintf(fichierHistorique, "Date  : %s\n", current->location.dateOp); 
-        fprintf(fichierHistorique, "Opération : %s\n", current->location.operation);
+        fprintf(fichierHistorique, "Opration : %s\n", current->location.operation);
         fprintf(fichierHistorique, "----------------------------------\n");
 
         current = current->next;
     }
-
     // Fermer le fichier
     fclose(fichierHistorique);
 
-    printf("Historique sauvegardé dans le fichier historique.txt.\n");
+    printf("Historique sauvegardÃ© dans le fichier historique.txt.\n");
 }
 
 
@@ -120,23 +118,23 @@ static int isEmpty(FileCar* file) {
 }
 
 static void Enfiler(FileCar* file, Car car) {
-    // Créer un nouveau nœud
+    // CrÃ©er un nouveau nÅ“ud
     NodeCar* newNode = (NodeCar*)malloc(sizeof(NodeCar));
     if (newNode == NULL) {
-        printf("Erreur d'allocation de mémoire\n");
+        printf("Erreur d'allocation de mÃ©moire\n");
         exit(EXIT_FAILURE);
     }
 
-    // Initialiser les données du nouveau nœud
+    // Initialiser les donnÃ©es du nouveau nÅ“ud
     newNode->car = car;
     newNode->next = NULL;
 
-    // Si la file est vide, le nouvel élément est à la fois le premier et le dernier
+    // Si la file est vide, le nouvel Ã©lÃ©ment est Ã  la fois le premier et le dernier
     if (isEmpty(file)) {
         file->tete = newNode;
         file->queue = newNode;
     } else {
-        // Sinon, ajouter le nouveau nœud à la fin de la file
+        // Sinon, ajouter le nouveau nÅ“ud Ã  la fin de la file
         file->queue->next = newNode;
         file->queue = newNode;
     }
@@ -148,17 +146,17 @@ static Car Defiler(FileCar* file) {
         exit(EXIT_FAILURE);
     }
 
-    // Extraire la voiture du premier nœud
+    // Extraire la voiture du premier nÅ“ud
     Car car = file->tete->car;
 
-    // Mettre à jour le pointeur vers le premier nœud
+    // Mettre Ã  jour le pointeur vers le premier nÅ“ud
     NodeCar* temp = file->tete;
     file->tete = file->tete->next;
 
-    // Libérer la mémoire du nœud extrait
+    // LibÃ©rer la mÃ©moire du nÅ“ud extrait
     free(temp);
 
-    // Si la file est maintenant vide, mettre à jour le pointeur vers le dernier nœud
+    // Si la file est maintenant vide, mettre Ã  jour le pointeur vers le dernier nÅ“ud
     if (file->tete == NULL) {
         file->queue = NULL;
     }
@@ -172,7 +170,7 @@ static Car DefilerRef(FileCar* file, char reference[256]) {
         exit(EXIT_FAILURE);
     }
 
-    // Rechercher le nœud correspondant à la référence de la voiture
+    // Rechercher le nÅ“ud correspondant Ã  la rÃ©fÃ©rence de la voiture
     NodeCar* current = file->tete;
     NodeCar* prev = NULL;
 
@@ -182,32 +180,47 @@ static Car DefilerRef(FileCar* file, char reference[256]) {
     }
 
     if (current == NULL) {
-        printf("La voiture avec la référence %d n'a pas été trouvée dans la file\n", reference);
+        printf("La voiture avec la rÃ©fÃ©rence %d n'a pas Ã©tÃ© trouvÃ©e dans la file\n", reference);
         exit(EXIT_FAILURE);
     }
 
-    // Extraire la voiture du nœud trouvé
+    // Extraire la voiture du nÅ“ud trouvÃ©
     Car car = current->car;
 
-    // Mettre à jour les pointeurs vers le nœud précédent et suivant
+    // Mettre Ã  jour les pointeurs vers le nÅ“ud prÃ©cÃ©dent et suivant
     if (prev == NULL) {
-        // Le nœud à extraire est en tête de file
+        // Le nÅ“ud Ã  extraire est en tÃªte de file
         file->tete = current->next;
     } else {
         prev->next = current->next;
     }
 
-    // Si le nœud à extraire est le dernier nœud, mettre à jour le pointeur vers le dernier nœud
+    // Si le nÅ“ud Ã  extraire est le dernier nÅ“ud, mettre Ã  jour le pointeur vers le dernier nÅ“ud
     if (current == file->queue) {
         file->queue = prev;
     }
 
-    // Libérer la mémoire du nœud extrait
+    // LibÃ©rer la mÃ©moire du nÅ“ud extrait
     free(current);
 
     return car;
 }
 
+static int CarRefExists(FileCar* file, const char* ref,const char*ARef) {
+    NodeCar* current = file->tete;
+
+    while (current != NULL) {
+        // Comparer les rÃ©fÃ©rences de voiture
+        if (strcmp(current->car.ref, ref) == 0 && strcmp(current->car.ref, ARef) != 0 ) {
+            // La rÃ©fÃ©rence de voiture existe dÃ©jÃ 
+            return 1;
+        }
+        current = current->next;
+    }
+
+    // La rÃ©fÃ©rence de voiture n'existe pas
+    return 0;
+}
 
 static void Louer(FileCar* file, const char ref[255],char test[5]) {
     if (isEmpty(file)) {
@@ -218,7 +231,7 @@ static void Louer(FileCar* file, const char ref[255],char test[5]) {
     NodeCar* current = file->tete;
     NodeCar* previous = NULL;
 
-    // Parcourir la file pour trouver le nœud avec la référence donnée
+    // Parcourir la file pour trouver le nÅ“ud avec la rÃ©fÃ©rence donnÃ©e
     while (current != NULL) {
        if (strcmp(current->car.ref, ref) == 0) {
            strcpy(current->car.dispo, test);
@@ -229,13 +242,13 @@ static void Louer(FileCar* file, const char ref[255],char test[5]) {
         current = current->next;
     }
 
-    // Si la référence n'a pas été trouvée, vous pouvez gérer l'erreur ici
-    printf("La voiture avec la référence %s n'a pas été trouvée dans la file\n", ref);
+    // Si la rÃ©fÃ©rence n'a pas Ã©tÃ© trouvÃ©e, vous pouvez gÃ©rer l'erreur ici
+    printf("La voiture avec la rÃ©fÃ©rence %s n'a pas Ã©tÃ© trouvÃ©e dans la file\n", ref);
     //exit(EXIT_FAILURE);
 }
 
 
-// Fonction pour récupérer la référence de la voiture à partir de l'index
+// Fonction pour rÃ©cupÃ©rer la rÃ©fÃ©rence de la voiture Ã  partir de l'index
 static const char* GetCarRefAtIndex(FileCar* file, int index) {
     if (isEmpty(file) || index < 0) {
         return NULL; // La file est vide ou l'index est invalide
@@ -280,39 +293,38 @@ static int estVide(PileLocation* pile) {
 static void empiler(PileLocation* pile, Location* valeur) {
     NodeLocation* nouveauNoeud = (NodeLocation*)malloc(sizeof(NodeLocation));
     if (nouveauNoeud == NULL) {
-    	printf("Erreur d'allocation mémoire.\n");
+    	printf("Erreur d'allocation mÃ©moire.\n");
     }
 
-    // Copie de la valeur dans le nouveau nœud
+    // Copie de la valeur dans le nouveau nÅ“ud
     strcpy(nouveauNoeud->location.refCar, valeur->refCar);
     strcpy(nouveauNoeud->location.emailUser, valeur->emailUser);
     strcpy(nouveauNoeud->location.operation, valeur->operation);
     strcpy(nouveauNoeud->location.dateOp, valeur->dateOp);
 
-    // Mise à jour du lien
+    // Mise Ã  jour du lien
     nouveauNoeud->next = pile->sommet;
 
-    // Mise à jour du sommet de la pile
+    // Mise Ã  jour du sommet de la pile
     pile->sommet = nouveauNoeud;
 }
 
 static Location depiler(PileLocation* pile) {
     if (estVide(pile)) {
-        printf("La pile est vide. Impossible de dépiler.\n");
+        printf("La pile est vide. Impossible de dÃ©piler.\n");
     }
 
-    // Récupération de la valeur au sommet de la pile
+    // RÃ©cupÃ©ration de la valeur au sommet de la pile
     Location valeurDepilee = pile->sommet->location;
 
-    // Mise à jour du sommet de la pile
+    // Mise Ã  jour du sommet de la pile
     NodeLocation* ancienSommet = pile->sommet;
     pile->sommet = pile->sommet->next;
 
-    // Libération de la mémoire de l'ancien sommet
+    // LibÃ©ration de la mÃ©moire de l'ancien sommet
     free(ancienSommet);
 
-    // Retour de la valeur dépilée
+    // Retour de la valeur dÃ©pilÃ©e
     return valeurDepilee;
 }
-
 
