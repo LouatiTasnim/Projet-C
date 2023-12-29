@@ -1,6 +1,6 @@
 # Projet-C
-Demo(https://clipchamp.com/watch/UGt9H83KSTR);
-E-Cras est une application de type Windows application développée en langage C à l'aide de l'éditeur DevC++.
+Demo(https://clipchamp.com/watch/UGt9H83KSTR)
+*E-Cras est une application de type Windows application développée en langage C à l'aide de l'éditeur DevC++.
 
 -Les utilisateurs sont stockés dans une liste simplement chaînée.
 -Les voitures sont stockées dans une file.
@@ -17,7 +17,7 @@ E-Cras est une application de type Windows application développée en langage C
 - Fichier Definition.c : contient la définition des structures de données et les sous-programmes nécessaires pour la manipulation des structures de données.
 - Fichier main.c : contient la fonction main ainsi que l'ensemble des fenêtres de l'application.
 
-Initialisation:
+*Initialisation:
     user1={"tasnim", "test","tasnim@gmail.com"}
     car1 = {"Ferari", "Red", "Sport car", 300, 45000.00,"Oui"}
     car2 = {"Golf 7", "Blue", "Phase2", 6, 8000.00,"Oui"}
