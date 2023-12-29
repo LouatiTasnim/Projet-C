@@ -6,6 +6,7 @@
 
 
 char g_connectedUserEmail[256];
+char selectedCarRef[256];
 
 HWND g_usernameTextBox;
 HWND g_passwordTextBox;
@@ -101,7 +102,7 @@ LRESULT CALLBACK ModifierWndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM 
     	
     	case WM_COMMAND:
     		if (HIWORD(wParam) == EN_SETFOCUS) {
-    		// Récupérez l'indice de la voiture à partir de la propriété de fenêtre
+    		// RÃ©cupÃ©rez l'indice de la voiture Ã  partir de la propriÃ©tÃ© de fenÃªtre
                 int carIndex = (int)GetWindowLongPtr((HWND)lParam, GWLP_USERDATA);
                  Car selectedCar = GetCarInfoByRef(&carFile, GetCarRefAtIndex(&carFile,carIndex));
                 CreateModifWindow(selectedCar);
@@ -112,11 +113,11 @@ LRESULT CALLBACK ModifierWndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM 
 
     	
         case WM_DESTROY:
-            // Fermez la fenêtre des voitures disponibles
+            // Fermez la fenÃªtre des voitures disponibles
             //PostQuitMessage(0);
             break;
 
-        // Ajoutez d'autres messages ou événements nécessaires selon vos besoins
+        // Ajoutez d'autres messages ou Ã©vÃ©nements nÃ©cessaires selon vos besoins
 
         default:
             return DefWindowProc(hwnd, Message, wParam, lParam);
@@ -128,38 +129,47 @@ LRESULT CALLBACK ModifierWndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM 
 LRESULT CALLBACK modifWndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) {
     switch (Message) {
     case WM_COMMAND:
-        // Gérer les événements de la fenêtre de modification ici
+        // GÃ©rer les Ã©vÃ©nements de la fenÃªtre de modification ici
         if (lParam == (LPARAM)g_ModifButton) {
-            // Récupérez l'indice de la voiture à partir de la propriété de fenêtre
-            int carIndex = (int)GetWindowLongPtr(hwnd, GWLP_USERDATA);
-             Car selectedCar = GetCarInfoByRef(&carFile, GetCarRefAtIndex(&carFile,carIndex));
-            // Supprimer l'ancienne voiture de la file
-            DefilerRef(&carFile, GetCarRefAtIndex(&carFile, carIndex));
-            // Récupérez les nouvelles informations de la voiture depuis les zones de texte
+             Car selectedCar = GetCarInfoByRef(&carFile, selectedCarRef);
+            // RÃ©cupÃ©rez les nouvelles informations de la voiture depuis les zones de texte
             char newRef[256], newCouleur[256], newDesc[256], newPrixStr[100], newChevauxStr[100];
             GetWindowTextA(g_refTextBox, newRef, sizeof(newRef));
             GetWindowTextA(g_couleurTextBox, newCouleur, sizeof(newCouleur));
             GetWindowTextA(g_descTextBox, newDesc, sizeof(newDesc));
             GetWindowTextA(g_prixTextBox, newPrixStr, sizeof(newPrixStr));
             GetWindowTextA(g_chevauxTextBox, newChevauxStr, sizeof(newChevauxStr));
+            
+            // VÃ©rifier si tous les champs sont remplis
+            if (strlen(newRef) == 0 || strlen(newCouleur) == 0 || strlen(newDesc) == 0 || strlen(newPrixStr) == 0|| strlen(newChevauxStr) == 0) {
+                MessageBox(hwnd, "Veuillez remplir tous les champs!", "Erreur", MB_OK | MB_ICONERROR);
+                break;
+            }
 
-            // Convertir les chaînes en valeurs appropriées
+            // Convertir les chaÃ®nes en valeurs appropriÃ©es
             double newPrix = atof(newPrixStr);
             int newChevaux = atoi(newChevauxStr);
 
-            // Créer une nouvelle voiture avec les informations mises à jour
+            // CrÃ©er une nouvelle voiture avec les informations mises Ã  jour
             Car updatedCar;
             strcpy(updatedCar.ref, newRef);
             strcpy(updatedCar.couleur, newCouleur);
             strcpy(updatedCar.description, newDesc);
             updatedCar.prix = newPrix;
             updatedCar.chevaux = newChevaux;
-            strcpy(updatedCar.dispo, selectedCar.dispo); // Mettez à jour selon vos besoins
-
+            strcpy(updatedCar.dispo, selectedCar.dispo); // Mettez Ã  jour selon vos besoins
+            
+             // VÃ©rifier si la rÃ©fÃ©rence de la voiture existe dÃ©jÃ 
+                if (CarRefExists(&carFile, newRef,selectedCar.ref)) {
+                    MessageBox(hwnd, "La rÃ©fÃ©rence de voiture existe dÃ©jÃ . Annulation de la modification.", "Erreur", MB_OK | MB_ICONERROR);
+                    break;
+                }
+			// Supprimer l'ancienne voiture de la file
+            DefilerRef(&carFile, selectedCar.ref);
             // Enfiler la nouvelle voiture
             Enfiler(&carFile, updatedCar);
 
-            // Ajouter une nouvelle opération à la pile
+            // Ajouter une nouvelle opÃ©ration Ã  la pile
             Location newLocation;
             strcpy(newLocation.operation, "Modification");
             strcpy(newLocation.emailUser, g_connectedUserEmail);
@@ -167,14 +177,14 @@ LRESULT CALLBACK modifWndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPa
             Date(newLocation.dateOp);
             empiler(&LocationPile, &newLocation);
 
-            MessageBox(hwnd, "Modification avec succès!", "Succès", MB_OK | MB_ICONINFORMATION);
+            MessageBox(hwnd, "Modification avec succÃ¨s!", "SuccÃ¨s", MB_OK | MB_ICONINFORMATION);
             DestroyWindow(g_modifWindow);
             g_modifWindow = NULL;
         }
         break;
 
     case WM_DESTROY:
-        // Terminer la boucle de message de la fenêtre d'inscription
+        // Terminer la boucle de message de la fenÃªtre d'inscription
        // PostQuitMessage(0);
         break;
 
@@ -200,9 +210,10 @@ void CreateModifWindow(Car selectedCar){
     wcModif.lpszClassName = classNom;
     wcModif.hIcon = LoadIcon(NULL, IDI_APPLICATION);
     wcModif.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+    
 
     if (!RegisterClassEx(&wcModif)) {
-        MessageBox(NULL, "Échec de l'enregistrement de la classe de la fenêtre des modifications disponibles!", "Erreur", MB_ICONEXCLAMATION | MB_OK);
+        MessageBox(NULL, "Ã‰chec de l'enregistrement de la classe de la fenÃªtre des modifications disponibles!", "Erreur", MB_ICONEXCLAMATION | MB_OK);
         return 0;
     }
 	 g_modifWindow = CreateWindowEx(WS_EX_CLIENTEDGE, classNom, "Modification",
@@ -210,9 +221,10 @@ void CreateModifWindow(Car selectedCar){
                 NULL, NULL, GetModuleHandle(NULL), NULL);
 
     if (g_modifWindow == NULL) {
-                MessageBox(NULL, "Échec de la création de la fenêtre de modification!", "Erreur", MB_ICONEXCLAMATION | MB_OK);
+                MessageBox(NULL, "Ã‰chec de la crÃ©ation de la fenÃªtre de modification!", "Erreur", MB_ICONEXCLAMATION | MB_OK);
             }
-    CreateWindow("STATIC", "Référence:", WS_VISIBLE | WS_CHILD,
+	
+    CreateWindow("STATIC", "RÃ©fÃ©rence:", WS_VISIBLE | WS_CHILD,
     		10, 10, 120, 20, g_modifWindow, NULL, NULL, NULL);
 
 	g_refTextBox = CreateWindow("EDIT", NULL, WS_VISIBLE | WS_CHILD | WS_BORDER,
@@ -244,8 +256,10 @@ void CreateModifWindow(Car selectedCar){
     
 
     g_ModifButton = CreateWindow("BUTTON", "Modifier", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-            140, 190, 100, 30, g_modifWindow, NULL, NULL, NULL);
+            140, 200, 100, 30, g_modifWindow, NULL, NULL, NULL);
             
+    strcpy(selectedCarRef,selectedCar.ref);
+    
     // Convert prix to string using snprintf
     char p[100];
     snprintf(p, sizeof(p), "%f", selectedCar.prix);
@@ -258,6 +272,8 @@ void CreateModifWindow(Car selectedCar){
     char chevauxStr[100];
     snprintf(chevauxStr, sizeof(chevauxStr), "%d", selectedCar.chevaux);
     SetWindowTextA(g_chevauxTextBox, chevauxStr);
+    
+
 }
 
 ////////////////Fin modifier window///////////////////////////////////
@@ -267,36 +283,41 @@ void CreateModifWindow(Car selectedCar){
 LRESULT CALLBACK SupprimerWndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) {
     switch (Message) {
     	
-    	case WM_COMMAND:
-            if (HIWORD(wParam) == EN_SETFOCUS) {
-                // Récupérez l'indice de la voiture à partir de la propriété de fenêtre
-                int carIndex = (int)GetWindowLongPtr((HWND)lParam, GWLP_USERDATA);
-                 // Récupérez l'e-mail de l'utilisateur connecté et la référence de la voiture
-                char emailBuffer[256], refCarBuffer[256];
-                strcpy(emailBuffer, g_connectedUserEmail);
+    case WM_COMMAND:
+    if (HIWORD(wParam) == EN_SETFOCUS) {
+        // RÃ©cupÃ©rez l'indice de la voiture Ã  partir de la propriÃ©tÃ© de fenÃªtre
+        int carIndex = (int)GetWindowLongPtr((HWND)lParam, GWLP_USERDATA);
+         // RÃ©cupÃ©rez l'e-mail de l'utilisateur connectÃ© et la rÃ©fÃ©rence de la voiture
+        char emailBuffer[256], refCarBuffer[256];
+        strcpy(emailBuffer, g_connectedUserEmail);
 
-                // Ajoutez un nouveau nœud à la pile
-                Location newLocation;
-                strcpy(newLocation.operation, "Suppression");
-                strcpy(newLocation.emailUser, emailBuffer);
-                strcpy(newLocation.refCar, GetCarRefAtIndex(&carFile,carIndex));
-                Date(newLocation.dateOp);
-                empiler(&LocationPile, &newLocation);
-                
-                MessageBox(hwnd, "Suppression avec success!", "Success", MB_OK | MB_ICONINFORMATION);
-                DestroyWindow(hwnd);
-                g_voituresSupprimerWindow = NULL;
-                DefilerRef(&carFile,GetCarRefAtIndex(&carFile,carIndex));
+        // Demander une confirmation Ã  l'utilisateur
+        int result = MessageBox(hwnd, "ÃŠtes-vous sÃ»r de vouloir supprimer cette voiture?", "Confirmation de suppression", MB_YESNO | MB_ICONQUESTION);
 
-            }
-            break;
+        if (result == IDYES) {
+            // Ajoutez un nouveau nÅ“ud Ã  la pile
+            Location newLocation;
+            strcpy(newLocation.operation, "Suppression");
+            strcpy(newLocation.emailUser, emailBuffer);
+            strcpy(newLocation.refCar, GetCarRefAtIndex(&carFile,carIndex));
+            Date(newLocation.dateOp);
+            empiler(&LocationPile, &newLocation);
+            
+            MessageBox(hwnd, "Suppression rÃ©ussie!", "Success", MB_OK | MB_ICONINFORMATION);
+            DestroyWindow(hwnd);
+            g_voituresSupprimerWindow = NULL;
+            DefilerRef(&carFile,GetCarRefAtIndex(&carFile,carIndex));
+        }
+    }
+    break;
+
     	
         case WM_DESTROY:
-            // Fermez la fenêtre des voitures disponibles
+            // Fermez la fenÃªtre des voitures disponibles
             //PostQuitMessage(0);
             break;
 
-        // Ajoutez d'autres messages ou événements nécessaires selon vos besoins
+        // Ajoutez d'autres messages ou Ã©vÃ©nements nÃ©cessaires selon vos besoins
 
         default:
             return DefWindowProc(hwnd, Message, wParam, lParam);
@@ -313,13 +334,13 @@ LRESULT CALLBACK RetourWndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lP
     	
     	case WM_COMMAND:
             if (HIWORD(wParam) == EN_SETFOCUS) {
-                // Récupérez l'indice de la voiture à partir de la propriété de fenêtre
+                // RÃ©cupÃ©rez l'indice de la voiture Ã  partir de la propriÃ©tÃ© de fenÃªtre
                 int carIndex = (int)GetWindowLongPtr((HWND)lParam, GWLP_USERDATA);
-                 // Récupérez l'e-mail de l'utilisateur connecté et la référence de la voiture
+                 // RÃ©cupÃ©rez l'e-mail de l'utilisateur connectÃ© et la rÃ©fÃ©rence de la voiture
                 char emailBuffer[256], refCarBuffer[256];
                 strcpy(emailBuffer, g_connectedUserEmail);
 
-                // Ajoutez un nouveau nœud à la pile
+                // Ajoutez un nouveau nÅ“ud Ã  la pile
                 Location newLocation;
                 strcpy(newLocation.operation, "Retour");
                 strcpy(newLocation.emailUser, emailBuffer);
@@ -336,11 +357,11 @@ LRESULT CALLBACK RetourWndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lP
             break;
     	
         case WM_DESTROY:
-            // Fermez la fenêtre des voitures disponibles
+            // Fermez la fenÃªtre des voitures disponibles
             //PostQuitMessage(0);
             break;
 
-        // Ajoutez d'autres messages ou événements nécessaires selon vos besoins
+        // Ajoutez d'autres messages ou Ã©vÃ©nements nÃ©cessaires selon vos besoins
 
         default:
             return DefWindowProc(hwnd, Message, wParam, lParam);
@@ -357,18 +378,18 @@ LRESULT CALLBACK CarWndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPara
     	
     	case WM_COMMAND:
             if (HIWORD(wParam) == EN_SETFOCUS) {
-                // Récupérez l'indice de la voiture à partir de la propriété de fenêtre
+                // RÃ©cupÃ©rez l'indice de la voiture Ã  partir de la propriÃ©tÃ© de fenÃªtre
                 int carIndex = (int)GetWindowLongPtr((HWND)lParam, GWLP_USERDATA);
 
             }
             break;
     	
         case WM_DESTROY:
-            // Fermez la fenêtre des voitures disponibles
+            // Fermez la fenÃªtre des voitures disponibles
             //PostQuitMessage(0);
             break;
 
-        // Ajoutez d'autres messages ou événements nécessaires selon vos besoins
+        // Ajoutez d'autres messages ou Ã©vÃ©nements nÃ©cessaires selon vos besoins
 
         default:
             return DefWindowProc(hwnd, Message, wParam, lParam);
@@ -385,14 +406,14 @@ LRESULT CALLBACK VoituresDispoWndProc(HWND hwnd, UINT Message, WPARAM wParam, LP
     	
     	case WM_COMMAND:
             if (HIWORD(wParam) == EN_SETFOCUS) {
-                // Récupérez l'indice de la voiture à partir de la propriété de fenêtre
+                // RÃ©cupÃ©rez l'indice de la voiture Ã  partir de la propriÃ©tÃ© de fenÃªtre
                 int carIndex = (int)GetWindowLongPtr((HWND)lParam, GWLP_USERDATA);
 
-                // Récupérez l'e-mail de l'utilisateur connecté et la référence de la voiture
+                // RÃ©cupÃ©rez l'e-mail de l'utilisateur connectÃ© et la rÃ©fÃ©rence de la voiture
                 char emailBuffer[256], refCarBuffer[256];
                 strcpy(emailBuffer, g_connectedUserEmail);
 
-                // Ajoutez un nouveau nœud à la pile
+                // Ajoutez un nouveau nÅ“ud Ã  la pile
                 Location newLocation;
                 strcpy(newLocation.dateOp, "test");
                 strcpy(newLocation.operation,"Location");
@@ -410,11 +431,11 @@ LRESULT CALLBACK VoituresDispoWndProc(HWND hwnd, UINT Message, WPARAM wParam, LP
             break;
     	
         case WM_DESTROY:
-            // Fermez la fenêtre des voitures disponibles
+            // Fermez la fenÃªtre des voitures disponibles
             //PostQuitMessage(0);
             break;
 
-        // Ajoutez d'autres messages ou événements nécessaires selon vos besoins
+        // Ajoutez d'autres messages ou Ã©vÃ©nements nÃ©cessaires selon vos besoins
 
         default:
             return DefWindowProc(hwnd, Message, wParam, lParam);
@@ -437,17 +458,17 @@ void AfficherVoituresDispo(HWND g_Window, char test[5],LRESULT VoituresDispoWndP
     wcVoituresDispo.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
 
     if (!RegisterClassEx(&wcVoituresDispo)) {
-        MessageBox(NULL, "Échec de l'enregistrement de la classe de la fenêtre des voitures !", "Erreur", MB_ICONEXCLAMATION | MB_OK);
+        MessageBox(NULL, "Ã‰chec de l'enregistrement de la classe de la fenÃªtre des voitures !", "Erreur", MB_ICONEXCLAMATION | MB_OK);
         return 0;
     }
 	
-	// Créez une nouvelle fenêtre pour afficher les voitures disponibles
+	// CrÃ©ez une nouvelle fenÃªtre pour afficher les voitures disponibles
     g_Window = CreateWindowEx(WS_EX_CLIENTEDGE, classNom, "Voitures ",
         WS_VISIBLE | WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 600, 400,
         NULL, NULL, GetModuleHandle(NULL), NULL);
         
     if (g_Window == NULL) {
-        MessageBox(NULL, "Échec de la création de la fenêtre des voitures !", "Erreur", MB_ICONEXCLAMATION | MB_OK);
+        MessageBox(NULL, "Ã‰chec de la crÃ©ation de la fenÃªtre des voitures !", "Erreur", MB_ICONEXCLAMATION | MB_OK);
         return;
     }
   if (isEmpty(&carFile)) {
@@ -455,16 +476,16 @@ void AfficherVoituresDispo(HWND g_Window, char test[5],LRESULT VoituresDispoWndP
         return;
     }
 
-    // Parcourir la file et afficher chaque voiture dans une boîte de texte séparée
+    // Parcourir la file et afficher chaque voiture dans une boÃ®te de texte sÃ©parÃ©e
     NodeCar* current = carFile.tete;
-    int yOffset = 10;  // Ajustez la valeur de départ en fonction de vos besoins
+    int yOffset = 10;  // Ajustez la valeur de dÃ©part en fonction de vos besoins
 	
 	 int currentIndex = 0;
 	 
     while (current != NULL ) {
     if(test){
 		if(strcmp(current->car.dispo, test) == 0){
-        // Créez une boîte de texte pour chaque voiture
+        // CrÃ©ez une boÃ®te de texte pour chaque voiture
         HWND hEditCarInfo = CreateWindow("EDIT", NULL, WS_VISIBLE | WS_CHILD | WS_BORDER | ES_MULTILINE | ES_READONLY,
             10, yOffset, 480, 80, g_Window, (HMENU)(intptr_t)currentIndex, GetModuleHandle(NULL), NULL);
 
@@ -473,16 +494,16 @@ void AfficherVoituresDispo(HWND g_Window, char test[5],LRESULT VoituresDispoWndP
             return;
         }
 
-        // Affichez les informations de la voiture dans la boîte de texte
+        // Affichez les informations de la voiture dans la boÃ®te de texte
         char carText[256];
-        sprintf(carText, "Référence: %s, Couleur: %s, Description: %s, Chevaux: %d, Prix: %.2f, Disponible: %s \n",
+        sprintf(carText, "RÃ©fÃ©rence: %s, Couleur: %s, Description: %s, Chevaux: %d, Prix: %.2f, Disponible: %s \n",
                current->car.ref, current->car.couleur, current->car.description,
                current->car.chevaux, current->car.prix,current->car.dispo);
 		
-		// Associez l'indice de la voiture à la propriété de fenêtre
+		// Associez l'indice de la voiture Ã  la propriÃ©tÃ© de fenÃªtre
         SetWindowLongPtr(hEditCarInfo, GWLP_USERDATA, (LONG_PTR)currentIndex);
         SetWindowText(hEditCarInfo, carText);
-         yOffset += 90;  // Ajustez la valeur pour l'espacement entre les boîtes de texte
+         yOffset += 90;  // Ajustez la valeur pour l'espacement entre les boÃ®tes de texte
 	}
 	}
 	else {
@@ -494,7 +515,7 @@ void AfficherVoituresDispo(HWND g_Window, char test[5],LRESULT VoituresDispoWndP
             return;
         }
         char carText[256];
-        sprintf(carText, "Référence: %s, Couleur: %s, Description: %s, Chevaux: %d, Prix: %.2f, Disponible: %s \n",
+        sprintf(carText, "RÃ©fÃ©rence: %s, Couleur: %s, Description: %s, Chevaux: %d, Prix: %.2f, Disponible: %s \n",
                current->car.ref, current->car.couleur, current->car.description,
                current->car.chevaux, current->car.prix,current->car.dispo);
 
@@ -505,7 +526,7 @@ void AfficherVoituresDispo(HWND g_Window, char test[5],LRESULT VoituresDispoWndP
         current = current->next;
         currentIndex++;
     }
-    // Affichez la fenêtre des voitures disponibles
+    // Affichez la fenÃªtre des voitures disponibles
     ShowWindow(g_Window, SW_SHOWNORMAL);
     UpdateWindow(g_Window);
 }
@@ -520,6 +541,8 @@ LRESULT CALLBACK HistoriqueWndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARA
     	case WM_COMMAND:
            if (lParam == (LPARAM)g_ArchiveButton) {
            	sauvegarderHistorique(&LocationPile);
+           	MessageBox(hwnd, "Archivage avec succÃ¨s!", "SuccÃ¨s", MB_OK | MB_ICONINFORMATION);
+           	DestroyWindow(hwnd);
 		   }
 		   else if (lParam == (LPARAM)g_FiltreJourButton) {
                 // Filtrer par jour
@@ -531,11 +554,11 @@ LRESULT CALLBACK HistoriqueWndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARA
             break;
     	
         case WM_DESTROY:
-            // Fermez la fenêtre des voitures disponibles
+            // Fermez la fenÃªtre des voitures disponibles
             //PostQuitMessage(0);
             break;
 
-        // Ajoutez d'autres messages ou événements nécessaires selon vos besoins
+        // Ajoutez d'autres messages ou Ã©vÃ©nements nÃ©cessaires selon vos besoins
 
         default:
             return DefWindowProc(hwnd, Message, wParam, lParam);
@@ -551,11 +574,11 @@ LRESULT CALLBACK HistoriqueJWndProc(HWND hwnd, UINT Message, WPARAM wParam, LPAR
             break;
     	
         case WM_DESTROY:
-            // Fermez la fenêtre des voitures disponibles
+            // Fermez la fenÃªtre des voitures disponibles
             //PostQuitMessage(0);
             break;
 
-        // Ajoutez d'autres messages ou événements nécessaires selon vos besoins
+        // Ajoutez d'autres messages ou Ã©vÃ©nements nÃ©cessaires selon vos besoins
 
         default:
             return DefWindowProc(hwnd, Message, wParam, lParam);
@@ -571,11 +594,11 @@ LRESULT CALLBACK HistoriqueMWndProc(HWND hwnd, UINT Message, WPARAM wParam, LPAR
             break;
     	
         case WM_DESTROY:
-            // Fermez la fenêtre des voitures disponibles
+            // Fermez la fenÃªtre des voitures disponibles
             //PostQuitMessage(0);
             break;
 
-        // Ajoutez d'autres messages ou événements nécessaires selon vos besoins
+        // Ajoutez d'autres messages ou Ã©vÃ©nements nÃ©cessaires selon vos besoins
 
         default:
             return DefWindowProc(hwnd, Message, wParam, lParam);
@@ -599,17 +622,17 @@ void AfficherHistoriqueLocation(){
     wcHistorique.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
 
     if (!RegisterClassEx(&wcHistorique)) {
-        MessageBox(NULL, "Échec de l'enregistrement de la classe de la fenêtre des historiques disponibles!", "Erreur", MB_ICONEXCLAMATION | MB_OK);
+        MessageBox(NULL, "Ã‰chec de l'enregistrement de la classe de la fenÃªtre des historiques disponibles!", "Erreur", MB_ICONEXCLAMATION | MB_OK);
         return 0;
     }
 	
-	// Créez une nouvelle fenêtre pour afficher l'historique
+	// CrÃ©ez une nouvelle fenÃªtre pour afficher l'historique
     g_historiqueWindow = CreateWindowEx(WS_EX_CLIENTEDGE, classNom, "Historique",
-        WS_VISIBLE | WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 600, 400,
+        WS_VISIBLE | WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 600, 700,
         NULL, NULL, GetModuleHandle(NULL), NULL);
         
     if (g_historiqueWindow == NULL) {
-        MessageBox(NULL, "Échec de la création de la fenêtre historique!", "Erreur", MB_ICONEXCLAMATION | MB_OK);
+        MessageBox(NULL, "Ã‰chec de la crÃ©ation de la fenÃªtre historique!", "Erreur", MB_ICONEXCLAMATION | MB_OK);
         return;
     }
   if (isEmpty(&LocationPile)) {
@@ -631,36 +654,36 @@ void AfficherHistoriqueLocation(){
      g_ArchiveButton = CreateWindow("BUTTON", "Vider l'historique dans un fichier", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
         10,70,500, 30, g_historiqueWindow, NULL, NULL, NULL);
 
-    // Parcourir la pile et afficher chaque voiture dans une boîte de texte séparée
+    // Parcourir la pile et afficher chaque voiture dans une boÃ®te de texte sÃ©parÃ©e
     NodeLocation* current = LocationPile.sommet;
-    int yOffset = 150;  // Ajustez la valeur de départ en fonction de vos besoins
+    int yOffset = 140;  // Ajustez la valeur de dÃ©part en fonction de vos besoins
 	
 	 int currentIndex = 0;
 	 
     while (current != NULL) {
-        // Créez une boîte de texte pour chaque voiture
+        // CrÃ©ez une boÃ®te de texte pour chaque voiture
         HWND hEditHistoriqueInfo = CreateWindow("EDIT", NULL, WS_VISIBLE | WS_CHILD | WS_BORDER | ES_MULTILINE | ES_READONLY,
-            10, yOffset, 480, 80, g_historiqueWindow, (HMENU)(intptr_t)currentIndex, GetModuleHandle(NULL), NULL);
+            10, yOffset, 480, 70, g_historiqueWindow, (HMENU)(intptr_t)currentIndex, GetModuleHandle(NULL), NULL);
 
         if (hEditHistoriqueInfo == NULL) {
             MessageBox(NULL, "Failed to create edit control!", "Error", MB_ICONEXCLAMATION | MB_OK);
             return;
         }
 
-        // Affichez les informations de la location dans la boîte de texte
+        // Affichez les informations de la location dans la boÃ®te de texte
         char carText[256];
-        sprintf(carText, "Référence: %s, Email: %s, Operation: %s, Date: %s \n",
+        sprintf(carText, "RÃ©fÃ©rence: %s, Email: %s, Operation: %s, Date: %s \n",
                current->location.refCar, current->location.emailUser,current->location.operation,current->location.dateOp);
 		
-		// Associez l'indice de la voiture à la propriété de fenêtre
+		// Associez l'indice de la voiture Ã  la propriÃ©tÃ© de fenÃªtre
         SetWindowLongPtr(hEditHistoriqueInfo, GWLP_USERDATA, (LONG_PTR)currentIndex);
         SetWindowText(hEditHistoriqueInfo, carText);
 
-        yOffset += 90;  // Ajustez la valeur pour l'espacement entre les boîtes de texte
+        yOffset += 90;  // Ajustez la valeur pour l'espacement entre les boÃ®tes de texte
         current = current->next;
         currentIndex++;
     }
-    // Affichez la fenêtre des historiques
+    // Affichez la fenÃªtre des historiques
     ShowWindow(g_historiqueWindow, SW_SHOWNORMAL);
     UpdateWindow(g_historiqueWindow);
 	
@@ -682,50 +705,50 @@ void FiltrerHistoriqueParJour() {
     wcHistoriqueJ.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
 
     if (!RegisterClassEx(&wcHistoriqueJ)) {
-        MessageBox(NULL, "Échec de l'enregistrement de la classe de la fenêtre des historiques disponibles!", "Erreur", MB_ICONEXCLAMATION | MB_OK);
+        MessageBox(NULL, "Ã‰chec de l'enregistrement de la classe de la fenÃªtre des historiques disponibles!", "Erreur", MB_ICONEXCLAMATION | MB_OK);
         return 0;
     }
 	
-	// Créez une nouvelle fenêtre pour afficher l'historique
+	// CrÃ©ez une nouvelle fenÃªtre pour afficher l'historique
     g_historiqueFiltreJourWindow = CreateWindowEx(WS_EX_CLIENTEDGE, classNom, "Historique",
-        WS_VISIBLE | WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 600, 400,
+        WS_VISIBLE | WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 600, 500,
         NULL, NULL, GetModuleHandle(NULL), NULL);
         
     if (g_historiqueFiltreJourWindow == NULL) {
-        MessageBox(NULL, "Échec de la création de la fenêtre historique!", "Erreur", MB_ICONEXCLAMATION | MB_OK);
+        MessageBox(NULL, "Ã‰chec de la crÃ©ation de la fenÃªtre historique!", "Erreur", MB_ICONEXCLAMATION | MB_OK);
         return;
     }
-    // Obtenez la date saisie dans l'élément d'édition
+    // Obtenez la date saisie dans l'Ã©lÃ©ment d'Ã©dition
     char dateFilter[20];
     GetWindowText(g_FiltreJourInput, dateFilter, sizeof(dateFilter));
 
-    // Parcourez la pile et affichez uniquement les éléments correspondant à la date
+    // Parcourez la pile et affichez uniquement les Ã©lÃ©ments correspondant Ã  la date
     NodeLocation* current = LocationPile.sommet;
-    int yOffset = 10;  // Ajustez la valeur de départ en fonction de vos besoins
+    int yOffset = 10;  // Ajustez la valeur de dÃ©part en fonction de vos besoins
     int currentIndex = 0;
 
     while (current != NULL) {
-        // Vérifiez si la date correspond au filtre
+        // VÃ©rifiez si la date correspond au filtre
         if (strstr(current->location.dateOp, dateFilter) != NULL) {
-            // Créez une boîte de texte pour chaque voiture
+            // CrÃ©ez une boÃ®te de texte pour chaque voiture
             HWND hEditHistoriqueInfo = CreateWindow("EDIT", NULL, WS_VISIBLE | WS_CHILD | WS_BORDER | ES_MULTILINE | ES_READONLY,
-                10, yOffset, 480, 80, g_historiqueFiltreJourWindow, (HMENU)(intptr_t)currentIndex, GetModuleHandle(NULL), NULL);
+                10, yOffset, 480, 70, g_historiqueFiltreJourWindow, (HMENU)(intptr_t)currentIndex, GetModuleHandle(NULL), NULL);
 
             if (hEditHistoriqueInfo == NULL) {
                 MessageBox(NULL, "Failed to create edit control!", "Error", MB_ICONEXCLAMATION | MB_OK);
                 return;
             }
 
-            // Affichez les informations de la location dans la boîte de texte
+            // Affichez les informations de la location dans la boÃ®te de texte
             char carText[256];
-            sprintf(carText, "Référence: %s, Email: %s, Operation: %s, Date: %s \n",
+            sprintf(carText, "RÃ©fÃ©rence: %s, Email: %s, Operation: %s, Date: %s \n",
                    current->location.refCar, current->location.emailUser, current->location.operation, current->location.dateOp);
 
-            // Associez l'indice de la voiture à la propriété de fenêtre
+            // Associez l'indice de la voiture Ã  la propriÃ©tÃ© de fenÃªtre
             SetWindowLongPtr(hEditHistoriqueInfo, GWLP_USERDATA, (LONG_PTR)currentIndex);
             SetWindowText(hEditHistoriqueInfo, carText);
 
-            yOffset += 90;  // Ajustez la valeur pour l'espacement entre les boîtes de texte
+            yOffset += 90;  // Ajustez la valeur pour l'espacement entre les boÃ®tes de texte
         }
 
         current = current->next;
@@ -751,50 +774,50 @@ void FiltrerHistoriqueParMois() {
     wcHistoriqueM.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
 
     if (!RegisterClassEx(&wcHistoriqueM)) {
-        MessageBox(NULL, "Échec de l'enregistrement de la classe de la fenêtre des historiques disponibles!", "Erreur", MB_ICONEXCLAMATION | MB_OK);
+        MessageBox(NULL, "Ã‰chec de l'enregistrement de la classe de la fenÃªtre des historiques disponibles!", "Erreur", MB_ICONEXCLAMATION | MB_OK);
         return 0;
     }
 	
-	// Créez une nouvelle fenêtre pour afficher l'historique
+	// CrÃ©ez une nouvelle fenÃªtre pour afficher l'historique
     g_historiqueFiltreMoisWindow = CreateWindowEx(WS_EX_CLIENTEDGE, classNom, "Historique",
-        WS_VISIBLE | WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 600, 400,
+        WS_VISIBLE | WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 600, 500,
         NULL, NULL, GetModuleHandle(NULL), NULL);
         
     if (g_historiqueFiltreMoisWindow == NULL) {
-        MessageBox(NULL, "Échec de la création de la fenêtre historique!", "Erreur", MB_ICONEXCLAMATION | MB_OK);
+        MessageBox(NULL, "Ã‰chec de la crÃ©ation de la fenÃªtre historique!", "Erreur", MB_ICONEXCLAMATION | MB_OK);
         return;
     }
-    // Obtenez la date saisie dans l'élément d'édition
+    // Obtenez la date saisie dans l'Ã©lÃ©ment d'Ã©dition
     char dateFilter[20];
     GetWindowText(g_FiltreMoisInput, dateFilter, sizeof(dateFilter));
 
-    // Parcourez la pile et affichez uniquement les éléments correspondant à la date
+    // Parcourez la pile et affichez uniquement les Ã©lÃ©ments correspondant Ã  la date
     NodeLocation* current = LocationPile.sommet;
-    int yOffset = 10;  // Ajustez la valeur de départ en fonction de vos besoins
+    int yOffset = 10;  // Ajustez la valeur de dÃ©part en fonction de vos besoins
     int currentIndex = 0;
 
     while (current != NULL) {
-        // Vérifiez si la date correspond au filtre
+        // VÃ©rifiez si la date correspond au filtre
         if (strstr(strchr(current->location.dateOp, '/'), dateFilter) != NULL) {
-            // Créez une boîte de texte pour chaque voiture
+            // CrÃ©ez une boÃ®te de texte pour chaque voiture
             HWND hEditHistoriqueInfo = CreateWindow("EDIT", NULL, WS_VISIBLE | WS_CHILD | WS_BORDER | ES_MULTILINE | ES_READONLY,
-                10, yOffset, 480, 80, g_historiqueFiltreMoisWindow, (HMENU)(intptr_t)currentIndex, GetModuleHandle(NULL), NULL);
+                10, yOffset, 480, 70, g_historiqueFiltreMoisWindow, (HMENU)(intptr_t)currentIndex, GetModuleHandle(NULL), NULL);
 
             if (hEditHistoriqueInfo == NULL) {
                 MessageBox(NULL, "Failed to create edit control!", "Error", MB_ICONEXCLAMATION | MB_OK);
                 return;
             }
 
-            // Affichez les informations de la location dans la boîte de texte
+            // Affichez les informations de la location dans la boÃ®te de texte
             char carText[256];
-            sprintf(carText, "Référence: %s, Email: %s, Operation: %s, Date: %s \n",
+            sprintf(carText, "RÃ©fÃ©rence: %s, Email: %s, Operation: %s, Date: %s \n",
                    current->location.refCar, current->location.emailUser, current->location.operation, current->location.dateOp);
 
-            // Associez l'indice de la voiture à la propriété de fenêtre
+            // Associez l'indice de la voiture Ã  la propriÃ©tÃ© de fenÃªtre
             SetWindowLongPtr(hEditHistoriqueInfo, GWLP_USERDATA, (LONG_PTR)currentIndex);
             SetWindowText(hEditHistoriqueInfo, carText);
 
-            yOffset += 90;  // Ajustez la valeur pour l'espacement entre les boîtes de texte
+            yOffset += 90;  // Ajustez la valeur pour l'espacement entre les boÃ®tes de texte
         }
 
         current = current->next;
@@ -809,22 +832,34 @@ void FiltrerHistoriqueParMois() {
 LRESULT CALLBACK InscriptionWndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) {
     switch (Message) {
     case WM_COMMAND:
-        // Gérer les événements de la fenêtre d'inscription ici
+        // GÃ©rer les Ã©vÃ©nements de la fenÃªtre d'inscription ici
         if (lParam == (LPARAM)g_createAccountButton) {
-            // Récupérer les informations de l'utilisateur pour créer le compte
+            // RÃ©cupÃ©rer les informations de l'utilisateur pour crÃ©er le compte
             char usernameBuffer[256], passwordBuffer[256], confirmPasswordBuffer[256], emailBuffer[256];
             GetWindowTextA(g_inscriptionUsernameTextBox, usernameBuffer, sizeof(usernameBuffer));
             GetWindowTextA(g_inscriptionPasswordTextBox, passwordBuffer, sizeof(passwordBuffer));
             GetWindowTextA(g_confirmPasswordTextBox, confirmPasswordBuffer, sizeof(confirmPasswordBuffer));
             GetWindowTextA(g_emailTextBox, emailBuffer, sizeof(emailBuffer));
-
-            // Vérifier si les mots de passe correspondent
+			
+			// VÃ©rifier si tous les champs sont remplis
+            if (strlen(usernameBuffer) == 0 || strlen(passwordBuffer) == 0 || strlen(confirmPasswordBuffer) == 0 || strlen(emailBuffer) == 0) {
+                   MessageBox(hwnd, "Veuillez remplir tous les champs!", "Erreur", MB_OK | MB_ICONERROR);
+                   break;
+            }
+                
+            // VÃ©rifier si les mots de passe correspondent
             if (strcmp(passwordBuffer, confirmPasswordBuffer) == 0) {
-                // Ajouter l'utilisateur à la liste
-                AddUser(usernameBuffer, passwordBuffer, emailBuffer);
-                MessageBox(hwnd, "Compte créé avec succès!", "Succès", MB_OK | MB_ICONINFORMATION);
-                // Fermer la fenêtre d'inscription
-                ShowWindow(hwnd, SW_HIDE);
+            	if(GetUserEmail(usernameBuffer)==NULL){
+            		// Ajouter l'utilisateur Ã  la liste
+	                AddUser(usernameBuffer, passwordBuffer, emailBuffer);
+	                MessageBox(hwnd, "Compte crÃ©Ã© avec succÃ¨s!", "SuccÃ¨s", MB_OK | MB_ICONINFORMATION);
+	                // Fermer la fenÃªtre d'inscription
+	                ShowWindow(hwnd, SW_HIDE);
+				}
+				else {
+					MessageBox(hwnd, "Utilisateur existant!", "Erreur", MB_OK | MB_ICONERROR);
+					break;
+				}
             } else {
                 MessageBox(hwnd, "Les mots de passe ne correspondent pas!", "Erreur", MB_OK | MB_ICONERROR);
             }
@@ -832,7 +867,7 @@ LRESULT CALLBACK InscriptionWndProc(HWND hwnd, UINT Message, WPARAM wParam, LPAR
         break;
 
     case WM_DESTROY:
-        // Terminer la boucle de message de la fenêtre d'inscription
+        // Terminer la boucle de message de la fenÃªtre d'inscription
         PostQuitMessage(0);
         break;
 
@@ -849,7 +884,7 @@ void CreateInscriWindow(){
                 NULL, NULL, GetModuleHandle(NULL), NULL);
 
     if (g_inscriptionWindow == NULL) {
-                MessageBox(NULL, "Échec de la création de la fenêtre d'inscription!", "Erreur", MB_ICONEXCLAMATION | MB_OK);
+                MessageBox(NULL, "Ã‰chec de la crÃ©ation de la fenÃªtre d'inscription!", "Erreur", MB_ICONEXCLAMATION | MB_OK);
             }
     CreateWindow("STATIC", "Email:", WS_VISIBLE | WS_CHILD,
     		10, 50, 120, 20, g_inscriptionWindow, NULL, NULL, NULL);
@@ -884,34 +919,34 @@ void CreateInscriWindow(){
 
 LRESULT CALLBACK MainWndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) {
     switch (Message) {
-        // Gérer les messages de la nouvelle fenêtre ici
+        // GÃ©rer les messages de la nouvelle fenÃªtre ici
         case WM_COMMAND:
             if (lParam == (LPARAM)g_louerButton) {
                 AfficherVoituresDispo(g_voituresDispoWindow,"Oui",VoituresDispoWndProc);
-                 MessageBox(NULL, "Veiullez selectionner la voiture à louer ", "Information", MB_OK | MB_ICONINFORMATION);
+                 MessageBox(NULL, "Veiullez selectionner la voiture Ã  louer ", "Information", MB_OK | MB_ICONINFORMATION);
 				}
 			if (lParam == (LPARAM)g_historiqueButton) {
                 AfficherHistoriqueLocation();
 				}
 			if (lParam == (LPARAM)g_retourButton) {
                 AfficherVoituresDispo(g_voituresLouerWindow,"Non",RetourWndProc);
-                MessageBox(NULL, "Veiullez selectionner la voiture à retourner ", "Information", MB_OK | MB_ICONINFORMATION);
+                MessageBox(NULL, "Veiullez selectionner la voiture Ã  retourner ", "Information", MB_OK | MB_ICONINFORMATION);
 				}
 			if (lParam == (LPARAM)g_afficherButton) {
                 AfficherVoituresDispo(g_voituresWindow,NULL,CarWndProc);
 				}
 			if (lParam == (LPARAM)g_supprimerButton) {
                 AfficherVoituresDispo(g_voituresSupprimerWindow,NULL,SupprimerWndProc);
-                MessageBox(NULL, "Veiullez selectionner la voiture à supprimer ", "Information", MB_OK | MB_ICONINFORMATION);
+                MessageBox(NULL, "Veiullez selectionner la voiture Ã  supprimer ", "Information", MB_OK | MB_ICONINFORMATION);
 				}
 			if (lParam == (LPARAM)g_modifierButton) {
                 AfficherVoituresDispo(g_voituresModifierWindow,NULL,ModifierWndProc);
-                MessageBox(NULL, "Veiullez selectionner la voiture à modifier ", "Information", MB_OK | MB_ICONINFORMATION);
+                MessageBox(NULL, "Veiullez selectionner la voiture Ã  modifier ", "Information", MB_OK | MB_ICONINFORMATION);
 				}
             break;
 
         case WM_DESTROY:
-            // Terminer la boucle de message de la nouvelle fenêtre
+            // Terminer la boucle de message de la nouvelle fenÃªtre
             PostQuitMessage(0);
             break;
 
@@ -936,39 +971,39 @@ void CreateMainWindow() {
     wcMain.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
 
     if (!RegisterClassEx(&wcMain)) {
-        MessageBox(NULL, "Échec de l'enregistrement de la classe de la fenêtre principale!", "Erreur", MB_ICONEXCLAMATION | MB_OK);
+        MessageBox(NULL, "Ã‰chec de l'enregistrement de la classe de la fenÃªtre principale!", "Erreur", MB_ICONEXCLAMATION | MB_OK);
         return;
     }
 
-    HWND hwndMain = CreateWindowEx(WS_EX_CLIENTEDGE, "MainWindowClass", "Nouvelle Fenêtre",
+    HWND hwndMain = CreateWindowEx(WS_EX_CLIENTEDGE, "MainWindowClass", "Nouvelle FenÃªtre",
         WS_VISIBLE | WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 800, 600,
         NULL, NULL, GetModuleHandle(NULL), NULL);
 
     if (hwndMain == NULL) {
-        MessageBox(NULL, "Échec de la création de la fenêtre principale!", "Erreur", MB_ICONEXCLAMATION | MB_OK);
+        MessageBox(NULL, "Ã‰chec de la crÃ©ation de la fenÃªtre principale!", "Erreur", MB_ICONEXCLAMATION | MB_OK);
         return;
     }
 
     g_louerButton = CreateWindow("BUTTON", "Louer voiture ", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-        20, 10, 200, 50, hwndMain, (HMENU)1, GetModuleHandle(NULL), NULL);
+        20, 30, 200, 50, hwndMain, (HMENU)1, GetModuleHandle(NULL), NULL);
     
     g_afficherButton = CreateWindow("BUTTON", "Afficher voiture", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-        20, 100, 200, 50, hwndMain, (HMENU)1, GetModuleHandle(NULL), NULL);
+        20, 120, 200, 50, hwndMain, (HMENU)1, GetModuleHandle(NULL), NULL);
     
     g_supprimerButton = CreateWindow("BUTTON", "Supprimer voiture", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-        20, 200, 200, 50, hwndMain, (HMENU)1, GetModuleHandle(NULL), NULL);
+        20, 220, 200, 50, hwndMain, (HMENU)1, GetModuleHandle(NULL), NULL);
         
     g_modifierButton = CreateWindow("BUTTON", "Modifier voiture", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-        500, 10, 200, 50, hwndMain, (HMENU)1, GetModuleHandle(NULL), NULL);
+        500, 30, 200, 50, hwndMain, (HMENU)1, GetModuleHandle(NULL), NULL);
     
     g_historiqueButton = CreateWindow("BUTTON", "Hostorique location", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-        500, 100, 200, 50, hwndMain, (HMENU)1, GetModuleHandle(NULL), NULL);
+        500, 120, 200, 50, hwndMain, (HMENU)1, GetModuleHandle(NULL), NULL);
     
     g_retourButton = CreateWindow("BUTTON", "Retour voiture", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-        500, 200, 200, 50, hwndMain, (HMENU)1, GetModuleHandle(NULL), NULL);
+        500, 220, 200, 50, hwndMain, (HMENU)1, GetModuleHandle(NULL), NULL);
     
     
-    // Affichez la fenêtre principale
+    // Affichez la fenÃªtre principale
     ShowWindow(hwndMain, SW_SHOWNORMAL);
     UpdateWindow(hwndMain);
 }
@@ -987,15 +1022,15 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
             if (AuthenticateUser(usernameBuffer, passwordBuffer)) {
             	strcpy(g_connectedUserEmail, GetUserEmail(usernameBuffer));
                 MessageBox(hwnd, "Login successful!", "Success", MB_OK | MB_ICONINFORMATION);
-                // Créez et affichez la nouvelle fenêtre principale
+                // CrÃ©ez et affichez la nouvelle fenÃªtre principale
                     CreateMainWindow();
-                    // Cachez la fenêtre d'authentification
+                    // Cachez la fenÃªtre d'authentification
                     ShowWindow(hwnd, SW_HIDE);
             } else {
                 MessageBox(hwnd, "Login failed! Invalid username or password.", "Error", MB_OK | MB_ICONERROR);
             }
         } else if (lParam == (LPARAM)g_inscriButton) {
-            // Créer et afficher la fenêtre d'inscription
+            // CrÃ©er et afficher la fenÃªtre d'inscription
             CreateInscriWindow();
         }
         break;
@@ -1025,7 +1060,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
     wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
     
-     // Enregistrez la classe pour la fenêtre d'inscription
+     // Enregistrez la classe pour la fenÃªtre d'inscription
     WNDCLASSEX wcInscription;
     memset(&wcInscription, 0, sizeof(wcInscription));
     wcInscription.cbSize = sizeof(WNDCLASSEX);
@@ -1038,7 +1073,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     wcInscription.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
 
     if (!RegisterClassEx(&wcInscription)) {
-        MessageBox(NULL, "Échec de l'enregistrement de la classe de la fenêtre d'inscription!", "Erreur", MB_ICONEXCLAMATION | MB_OK);
+        MessageBox(NULL, "Ã‰chec de l'enregistrement de la classe de la fenÃªtre d'inscription!", "Erreur", MB_ICONEXCLAMATION | MB_OK);
         return 0;
     }
 
@@ -1057,25 +1092,25 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // Create labels
     g_usernameLabel = CreateWindow("STATIC", "Username:", WS_VISIBLE | WS_CHILD,
-        10, 10, 80, 20, hwnd, NULL, hInstance, NULL);
+        30, 30, 80, 20, hwnd, NULL, hInstance, NULL);
 
     g_passwordLabel = CreateWindow("STATIC", "Password:", WS_VISIBLE | WS_CHILD,
-        10, 40, 80, 20, hwnd, NULL, hInstance, NULL);
+        30, 60, 80, 20, hwnd, NULL, hInstance, NULL);
 
     // Create username text box
     g_usernameTextBox = CreateWindow("EDIT", NULL, WS_VISIBLE | WS_CHILD | WS_BORDER,
-        100, 10, 200, 20, hwnd, NULL, hInstance, NULL);
+        120, 30, 200, 20, hwnd, NULL, hInstance, NULL);
 
     // Create password text box
     g_passwordTextBox = CreateWindow("EDIT", NULL, WS_VISIBLE | WS_CHILD | WS_BORDER | ES_PASSWORD,
-        100, 40, 200, 20, hwnd, NULL, hInstance, NULL);
+        120, 60, 200, 20, hwnd, NULL, hInstance, NULL);
 
     // Create login button
     g_loginButton = CreateWindow("BUTTON", "Se connecter", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-        10, 70, 130, 30, hwnd, (HMENU)1, hInstance, NULL);
+        30, 100, 130, 40, hwnd, (HMENU)1, hInstance, NULL);
     
-    g_inscriButton = CreateWindow("BUTTON", "Créer un compte", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-        150, 70, 130, 30, hwnd, (HMENU)1, hInstance, NULL);
+    g_inscriButton = CreateWindow("BUTTON", "CrÃ©er un compte", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+        180, 100, 130, 40, hwnd, (HMENU)1, hInstance, NULL);
 
     if (g_usernameLabel == NULL || g_passwordLabel == NULL ||
         g_usernameTextBox == NULL || g_passwordTextBox == NULL || g_loginButton == NULL || g_inscriButton == NULL) {
@@ -1085,14 +1120,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     
     AddUser("tasnim", "test","tasnim@gmail.com");
     
-    Car car1 = {"123ABC", "Red", "Sport car", 300, 45000.00,"Oui"}; 
-    Car car2 = {"456DEF", "Blue", "Sedan", 150, 25000.00,"Oui"};  
+    Car car1 = {"Ferari", "Red", "Sport car", 300, 45000.00,"Oui"}; 
+    Car car2 = {"Golf 7", "Blue", "Phase2", 6, 8000.00,"Oui"};  
+    Car car3 = {"Ford", "Green", "4*4", 8, 5000.00,"Non"};  
 	initializeFile(&carFile); 
     Enfiler(&carFile, car1);
     Enfiler(&carFile, car2);
+    Enfiler(&carFile, car3);
     
-    Location newLocation1 = {"Cupra", "tasnim@gmail.com", "26/12/2023","Location"}; 
-    Location newLocation2 = {"BMW", "tasnim@gmail.com", "05/11/2023","Retour"};
+    Location newLocation1 = {"Cupra", "tasnim@gmail.com", "26/11/2023","Location"}; 
+    Location newLocation2 = {"BMW", "tasnim@gmail.com", "05/10/2023","Retour"};
     empiler(&LocationPile, &newLocation2);
     empiler(&LocationPile, &newLocation1);
     
