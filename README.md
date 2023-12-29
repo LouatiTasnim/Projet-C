@@ -2,8 +2,11 @@
 *E-Cras est une application de type Windows application développée en langage C à l'aide de l'éditeur DevC++.
 
 -Les utilisateurs sont stockés dans une liste simplement chaînée.
+
 -Les voitures sont stockées dans une file.
+
 -L'historique des opérations (suppression, modification, retour et location) est stocké dans une pile.
+
 -L'archivage de l'historique s'effectue dans un fichier.
 
 *Chaque utilisateur est caractérisé par un nom d'utilisateur, un mot de passe et une adresse e-mail (récupérée lors de l'authentification et utilisée pour l'historique dans chaque opération).
