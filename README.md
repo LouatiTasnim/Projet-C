@@ -1,5 +1,5 @@
 # Projet-C
-Demo(https://clipchamp.com/watch/UGt9H83KSTR)
+Demo(https://clipchamp.com/watch/UGt9H83KSTR);
 E-Cras est une application de type Windows application développée en langage C à l'aide de l'éditeur DevC++.
 
 -Les utilisateurs sont stockés dans une liste simplement chaînée.
